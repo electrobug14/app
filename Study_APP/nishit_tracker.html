@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nishit's Study Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a1a; min-height: 100vh; }
+
+  .header { background: #fff; border-bottom: 0.5px solid #ddd; padding: 16px 20px; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 17px; font-weight: 600; color: #1a1a1a; }
+  .header .sub { font-size: 13px; color: #888; margin-top: 2px; }
+  .streak-badge { background: #fff3e0; color: #e65100; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid #ffcc80; }
+
+  .tabs { display: flex; background: #fff; border-bottom: 0.5px solid #ddd; overflow-x: auto; }
+  .tab { flex: 1; min-width: 80px; padding: 12px 8px; text-align: center; font-size: 13px; font-weight: 500; color: #888; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
+  .tab.active { color: #534AB7; border-bottom-color: #534AB7; }
+
+  .page { display: none; padding: 16px; max-width: 500px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .card { background: #fff; border-radius: 12px; border: 0.5px solid #e0e0e0; padding: 16px; margin-bottom: 12px; }
+  .card-title { font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+  .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .metric { background: #f8f8f6; border-radius: 8px; padding: 12px 10px; text-align: center; }
+  .metric .val { font-size: 22px; font-weight: 600; color: #534AB7; }
+  .metric .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .log-section { margin-bottom: 20px; }
+  .log-section label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #333; }
+  .log-section .desc { font-size: 12px; color: #888; margin-bottom: 6px; }
+
+  .hour-input { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .hour-input span { font-size: 13px; color: #555; min-width: 90px; }
+  .hour-input input[type=range] { flex: 1; accent-color: #534AB7; }
+  .hour-input .num { font-size: 14px; font-weight: 600; color: #534AB7; min-width: 28px; text-align: right; }
+
+  .mood-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mood-btn { padding: 8px 14px; border: 1px solid #ddd; border-radius: 20px; font-size: 13px; cursor: pointer; background: #fff; transition: all 0.2s; color: #555; }
+  .mood-btn.selected { background: #534AB7; color: #fff; border-color: #534AB7; }
+
+  .notes-area { width: 100%; border: 0.5px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 70px; color: #333; background: #fff; }
+  .notes-area:focus { outline: none; border-color: #534AB7; }
+
+  .checklist { display: flex; flex-direction: column; gap: 8px; }
+  .check-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #333; cursor: pointer; }
+  .check-item input[type=checkbox] { accent-color: #534AB7; width: 16px; height: 16px; cursor: pointer; }
+  .check-item.done { color: #999; text-decoration: line-through; }
+
+  .save-btn { width: 100%; padding: 14px; background: #534AB7; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+  .save-btn:active { background: #3C3489; }
+
+  .week-summary { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
+  .day-dot { text-align: center; }
+  .day-dot .dot { width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 3px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+  .day-dot .dot.done { background: #534AB7; color: #fff; }
+  .day-dot .dot.partial { background: #CECBF6; color: #3C3489; }
+  .day-dot .dot.miss { background: #f0f0ee; color: #bbb; }
+  .day-dot .dot.today { border: 2px solid #534AB7; }
+  .day-dot .dname { font-size: 10px; color: #aaa; }
+
+  .log-list { display: flex; flex-direction: column; gap: 8px; }
+  .log-item { background: #f8f8f6; border-radius: 8px; padding: 12px; }
+  .log-item .date { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .log-item .hours-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .tag.vlsi { background: #EEEDFE; color: #534AB7; }
+  .tag.c { background: #E1F5EE; color: #0F6E56; }
+  .tag.emb { background: #fff3e0; color: #e65100; }
+  .tag.total { background: #f0f0ee; color: #555; }
+  .log-item .note-preview { font-size: 12px; color: #888; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .plan-card { background: #EEEDFE; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .plan-card .phase { font-size: 11px; font-weight: 600; color: #534AB7; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .plan-card h3 { font-size: 15px; font-weight: 600; color: #26215C; margin-bottom: 8px; }
+  .plan-card ul { padding-left: 16px; }
+  .plan-card ul li { font-size: 13px; color: #3C3489; margin-bottom: 3px; }
+
+  .export-btn { width: 100%; padding: 12px; background: #fff; color: #534AB7; border: 1.5px solid #534AB7; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #26215C; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+  .toast.show { opacity: 1; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: #aaa; font-size: 14px; }
+
+  .progress-bar-wrap { margin-bottom: 10px; }
+  .progress-bar-wrap .bar-label { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 4px; }
+  .progress-bar { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+  .progress-bar .fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .fill.vlsi { background: #534AB7; }
+  .fill.c { background: #1D9E75; }
+  .fill.emb { background: #ef9f27; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="h1" style="font-size:17px;font-weight:600;">Nishit's Tracker</div>
+    <div class="sub" id="today-date"></div>
+  </div>
+  <div class="streak-badge" id="streak-badge">🔥 0 day streak</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('log')">Log Today</div>
+  <div class="tab" onclick="switchTab('week')">This Week</div>
+  <div class="tab" onclick="switchTab('history')">History</div>
+  <div class="tab" onclick="switchTab('plan')">Plan</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- LOG TODAY -->
+<div id="page-log" class="page active">
+  <div class="card">
+    <div class="card-title">Hours Logged</div>
+    <div class="hour-input">
+      <span>Digital Design</span>
+      <input type="range" min="0" max="4" step="0.5" value="0" id="hr-digital" oninput="updateSlider('digital')">
+      <div class="num" id="val-digital">0</div>
+    </div>
+    <div class="hour-input">
+      <span>C Programming</span>
+      <input type="range" min="0" max="4" step="0.5" value="0" id="hr-c" oninput="updateSlider('c')">
+      <div class="num" id="val-c">0</div>
+    </div>
+    <div class="hour-input">
+      <span>Verilog/Verif.</span>
+      <input type="range" min="0" max="4" step="0.5" value="0" id="hr-verilog" oninput="updateSlider('verilog')">
+      <div class="num" id="val-verilog">0</div>
+    </div>
+    <div class="hour-input">
+      <span>Freelancing</span>
+      <input type="range" min="0" max="3" step="0.5" value="0" id="hr-free" oninput="updateSlider('free')">
+      <div class="num" id="val-free">0</div>
+    </div>
+    <div style="margin-top:10px; padding-top:10px; border-top:0.5px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:13px;color:#888;">Total study</span>
+      <span style="font-size:18px;font-weight:600;color:#534AB7;" id="total-hrs">0 hrs</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Today's Tasks</div>
+    <div class="checklist" id="checklist">
+      <label class="check-item"><input type="checkbox" value="Revised yesterday's notes"> Revised yesterday's notes</label>
+      <label class="check-item"><input type="checkbox" value="Completed all 3 study slots"> Completed all 3 study slots</label>
+      <label class="check-item"><input type="checkbox" value="Practiced 1 coding problem"> Practiced 1 coding problem</label>
+      <label class="check-item"><input type="checkbox" value="Updated GitHub/portfolio"> Updated GitHub/portfolio</label>
+      <label class="check-item"><input type="checkbox" value="Avoided random topic hopping"> Avoided random topic hopping</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Mood & Notes</div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:13px;color:#555;margin-bottom:8px;">How was your focus today?</div>
+      <div class="mood-row" id="mood-row">
+        <button class="mood-btn" onclick="selectMood(this,'Excellent')">Excellent</button>
+        <button class="mood-btn" onclick="selectMood(this,'Good')">Good</button>
+        <button class="mood-btn" onclick="selectMood(this,'Okay')">Okay</button>
+        <button class="mood-btn" onclick="selectMood(this,'Bad')">Bad</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;color:#555;margin-bottom:6px;">What did you cover? Any blockers?</div>
+      <textarea class="notes-area" id="day-notes" placeholder="e.g. Finished FSM chapter, struggled with pointers..."></textarea>
+    </div>
+  </div>
+
+  <button class="save-btn" onclick="saveLog()">Save Today's Log</button>
+</div>
+
+<!-- WEEK VIEW -->
+<div id="page-week" class="page">
+  <div class="card">
+    <div class="card-title">This Week</div>
+    <div class="week-summary" id="week-dots"></div>
+    <div class="metric-row">
+      <div class="metric"><div class="val" id="w-total">0</div><div class="lbl">Total hrs</div></div>
+      <div class="metric"><div class="val" id="w-days">0</div><div class="lbl">Days logged</div></div>
+      <div class="metric"><div class="val" id="w-avg">0</div><div class="lbl">Avg hrs/day</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Subject Breakdown</div>
+    <div id="subject-bars"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Weekly Report for Claude</div>
+    <div style="font-size:13px;color:#666;margin-bottom:10px;">Copy this and send to Claude to get your next week's plan!</div>
+    <textarea class="notes-area" id="report-text" readonly style="min-height:120px;background:#f8f8f6;font-size:12px;"></textarea>
+    <button class="export-btn" onclick="copyReport()">Copy Report</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="page-history" class="page">
+  <div class="card">
+    <div class="card-title">All-time Stats</div>
+    <div class="metric-row">
+      <div class="metric"><div class="val" id="h-total">0</div><div class="lbl">Total hrs</div></div>
+      <div class="metric"><div class="val" id="h-days">0</div><div class="lbl">Days logged</div></div>
+      <div class="metric"><div class="val" id="h-streak">0</div><div class="lbl">Best streak</div></div>
+    </div>
+  </div>
+  <div id="log-list" class="log-list"></div>
+</div>
+
+<!-- PLAN -->
+<div id="page-plan" class="page">
+  <div class="plan-card">
+    <div class="phase">Phase 1 · Now → Month 2</div>
+    <h3>Foundation Rebuild</h3>
+    <ul>
+      <li>Digital Design: Boolean, FSM, Flip-flops, Timing</li>
+      <li>C Programming: Pointers, Bit manipulation, Memory</li>
+      <li>Verilog: always blocks, FSM coding, basic testbench</li>
+      <li>Target: 6.5 hrs/day, 5 days/week</li>
+    </ul>
+  </div>
+  <div class="plan-card" style="background:#E1F5EE;">
+    <div class="phase" style="color:#0F6E56;">Phase 2 · Month 2–5</div>
+    <h3 style="color:#04342C;">Industry Skills</h3>
+    <ul style="color:#085041 !important;">
+      <li>SystemVerilog basics + testbench architecture</li>
+      <li>FIFO, ALU, UART testbenches</li>
+      <li>FreeRTOS on STM32/ESP32</li>
+      <li>AXI-lite slave design</li>
+    </ul>
+  </div>
+  <div class="plan-card" style="background:#fff3e0;">
+    <div class="phase" style="color:#e65100;">Phase 3 · Month 5–9</div>
+    <h3 style="color:#bf360c;">Job Preparation</h3>
+    <ul style="color:#e65100;">
+      <li>Portfolio: GitHub with block diagrams + READMEs</li>
+      <li>Interview prep: Digital + C + Verilog questions</li>
+      <li>Apply: Startups → Service → Product</li>
+      <li>Target: Job by Dec 2026</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Daily Targets</div>
+    <div style="font-size:14px;color:#333;line-height:2;">
+      <div>Digital Design &nbsp;<strong style="color:#534AB7;">2.5 hrs</strong></div>
+      <div>C Programming &nbsp;<strong style="color:#1D9E75;">2.0 hrs</strong></div>
+      <div>Verilog / Verification &nbsp;<strong style="color:#ef9f27;">2.0 hrs</strong></div>
+      <div style="border-top:0.5px solid #eee;margin-top:6px;padding-top:6px;">Total &nbsp;<strong style="color:#333;">6.5 hrs</strong></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'nishit_logs_v1';
+let selectedMood = '';
+
+function getLogs() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+}
+function saveLogs(logs) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+}
+
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function formatDate(d) {
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['log','week','history','plan'][i] === name);
+  });
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (name === 'week') renderWeek();
+  if (name === 'history') renderHistory();
+}
+
+function updateSlider(key) {
+  const val = parseFloat(document.getElementById('hr-' + key).value);
+  document.getElementById('val-' + key).textContent = val;
+  const d = parseFloat(document.getElementById('hr-digital').value);
+  const c = parseFloat(document.getElementById('hr-c').value);
+  const v = parseFloat(document.getElementById('hr-verilog').value);
+  document.getElementById('total-hrs').textContent = (d + c + v).toFixed(1) + ' hrs';
+}
+
+function selectMood(btn, mood) {
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedMood = mood;
+}
+
+function saveLog() {
+  const digital = parseFloat(document.getElementById('hr-digital').value);
+  const c = parseFloat(document.getElementById('hr-c').value);
+  const verilog = parseFloat(document.getElementById('hr-verilog').value);
+  const free = parseFloat(document.getElementById('hr-free').value);
+  const notes = document.getElementById('day-notes').value.trim();
+  const checks = [...document.querySelectorAll('.check-item input:checked')].map(i => i.value);
+
+  const logs = getLogs().filter(l => l.date !== today());
+  logs.push({ date: today(), digital, c, verilog, free, mood: selectedMood, notes, checks });
+  saveLogs(logs);
+  updateStreak();
+  showToast('Day logged!');
+}
+
+function updateStreak() {
+  const logs = getLogs();
+  const dates = logs.map(l => l.date).sort().reverse();
+  let streak = 0;
+  let d = new Date();
+  for (let i = 0; i < 60; i++) {
+    const key = d.toISOString().split('T')[0];
+    if (dates.includes(key)) { streak++; d.setDate(d.getDate() - 1); }
+    else if (i === 0) { d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  document.getElementById('streak-badge').textContent = '🔥 ' + streak + ' day streak';
+  return streak;
+}
+
+function renderWeek() {
+  const logs = getLogs();
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const now = new Date();
+  const todayStr = today();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+
+  let html = '';
+  let weekLogs = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const key = d.toISOString().split('T')[0];
+    const log = logs.find(l => l.date === key);
+    const total = log ? (log.digital + log.c + log.verilog) : 0;
+    const cls = !log ? 'miss' : total >= 6 ? 'done' : total > 2 ? 'partial' : 'miss';
+    const isToday = key === todayStr ? ' today' : '';
+    html += `<div class="day-dot"><div class="dot ${cls}${isToday}">${total > 0 ? total.toFixed(0) : ''}</div><div class="dname">${days[d.getDay()]}</div></div>`;
+    if (log) weekLogs.push(log);
+  }
+  document.getElementById('week-dots').innerHTML = html;
+
+  const wTotal = weekLogs.reduce((s, l) => s + l.digital + l.c + l.verilog, 0);
+  document.getElementById('w-total').textContent = wTotal.toFixed(1);
+  document.getElementById('w-days').textContent = weekLogs.length;
+  document.getElementById('w-avg').textContent = weekLogs.length ? (wTotal / weekLogs.length).toFixed(1) : 0;
+
+  const wD = weekLogs.reduce((s, l) => s + l.digital, 0);
+  const wC = weekLogs.reduce((s, l) => s + l.c, 0);
+  const wV = weekLogs.reduce((s, l) => s + l.verilog, 0);
+  const max = Math.max(wD, wC, wV, 1);
+  const bars = [
+    { label: 'Digital Design', val: wD, cls: 'vlsi', target: 12.5 },
+    { label: 'C Programming', val: wC, cls: 'c', target: 10 },
+    { label: 'Verilog/Verif.', val: wV, cls: 'emb', target: 10 }
+  ];
+  document.getElementById('subject-bars').innerHTML = bars.map(b => `
+    <div class="progress-bar-wrap">
+      <div class="bar-label"><span>${b.label}</span><span>${b.val.toFixed(1)} / ${b.target} hrs</span></div>
+      <div class="progress-bar"><div class="fill ${b.cls}" style="width:${Math.min(100, b.val / b.target * 100).toFixed(0)}%"></div></div>
+    </div>`).join('');
+
+  const moodMap = weekLogs.map(l => l.mood).filter(Boolean);
+  const dominant = moodMap.length ? moodMap.sort((a,b) => moodMap.filter(v=>v===b).length - moodMap.filter(v=>v===a).length)[0] : 'N/A';
+  const notes = weekLogs.map(l => l.notes).filter(Boolean).join('; ');
+  const report = `WEEKLY LOG - ${formatDate(weekStart.toISOString().split('T')[0])} to ${formatDate(todayStr)}
+
+Days logged: ${weekLogs.length}/7
+Total study: ${wTotal.toFixed(1)} hrs
+- Digital Design: ${wD.toFixed(1)} hrs (target 12.5)
+- C Programming: ${wC.toFixed(1)} hrs (target 10)
+- Verilog/Verification: ${wV.toFixed(1)} hrs (target 10)
+
+Mood trend: ${dominant}
+
+Notes from this week:
+${notes || 'None added.'}
+
+Please analyze my progress and give me next week's adjusted plan.`;
+  document.getElementById('report-text').value = report;
+}
+
+function renderHistory() {
+  const logs = getLogs().slice().reverse();
+  const total = logs.reduce((s, l) => s + l.digital + l.c + l.verilog, 0);
+  document.getElementById('h-total').textContent = total.toFixed(1);
+  document.getElementById('h-days').textContent = logs.length;
+  document.getElementById('h-streak').textContent = updateStreak();
+
+  if (!logs.length) {
+    document.getElementById('log-list').innerHTML = '<div class="empty-state">No logs yet. Start today!</div>';
+    return;
+  }
+  document.getElementById('log-list').innerHTML = logs.map(l => `
+    <div class="log-item">
+      <div class="date">${formatDate(l.date)} ${l.mood ? '· ' + l.mood : ''}</div>
+      <div class="hours-row">
+        <span class="tag vlsi">Digital ${l.digital}h</span>
+        <span class="tag c">C ${l.c}h</span>
+        <span class="tag emb">Verilog ${l.verilog}h</span>
+        <span class="tag total">Total ${(l.digital+l.c+l.verilog).toFixed(1)}h</span>
+      </div>
+      ${l.notes ? `<div class="note-preview">${l.notes}</div>` : ''}
+    </div>`).join('');
+}
+
+function copyReport() {
+  const text = document.getElementById('report-text').value;
+  navigator.clipboard.writeText(text).then(() => showToast('Report copied!')).catch(() => {
+    document.getElementById('report-text').select();
+    document.execCommand('copy');
+    showToast('Report copied!');
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function init() {
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  updateStreak();
+
+  const todayLog = getLogs().find(l => l.date === today());
+  if (todayLog) {
+    document.getElementById('hr-digital').value = todayLog.digital;
+    document.getElementById('hr-c').value = todayLog.c;
+    document.getElementById('hr-verilog').value = todayLog.verilog;
+    document.getElementById('hr-free').value = todayLog.free || 0;
+    ['digital','c','verilog','free'].forEach(k => updateSlider(k));
+    document.getElementById('day-notes').value = todayLog.notes || '';
+    if (todayLog.mood) {
+      document.querySelectorAll('.mood-btn').forEach(b => { if (b.textContent === todayLog.mood) b.classList.add('selected'); });
+      selectedMood = todayLog.mood;
+    }
+    if (todayLog.checks) {
+      document.querySelectorAll('.check-item input').forEach(inp => { if (todayLog.checks.includes(inp.value)) inp.checked = true; });
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>

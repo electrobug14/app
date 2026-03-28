@@ -1,0 +1,3 @@
+mkdir -p /home/claude/StudyTrackerApp/{src/{screens,components,utils,constants},assets} && echo "Structure created"
+cd /home/claude && zip -r StudyTrackerApp.zip StudyTrackerApp/ && echo "Zipped successfully" && ls -lh StudyTrackerApp.zip
+cp /home/claude/StudyTrackerApp.zip /mnt/user-data/outputs/StudyTrackerApp.zip && echo "Done"
